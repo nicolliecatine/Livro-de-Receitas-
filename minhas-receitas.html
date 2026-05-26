@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Minhas Receitas">
+  <title>Minhas Receitas</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia,'Times New Roman',serif; background:#f4f1ee; color:#1a1a1a; min-height:100vh; -webkit-text-size-adjust:100%; }
+
+    /* HEADER */
+    header { background:#6b1a2a; position:sticky; top:0; z-index:100; box-shadow:0 2px 20px rgba(107,26,42,0.4); }
+    .header-inner { max-width:900px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { font-size:28px; }
+    .logo-title { font-size:20px; font-weight:700; color:#fce8ec; letter-spacing:0.5px; }
+    .logo-sub { font-size:11px; color:#d9a0ab; margin-top:2px; }
+    .btn-back { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fce8ec; padding:7px 16px; border-radius:8px; cursor:pointer; font-size:14px; font-family:inherit; display:none; }
+    .btn-add { background:#4a5c2f; border:none; color:#eef2e6; padding:9px 20px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit; }
+
+    /* BACKUP BAR */
+    .backup-bar { max-width:900px; margin:0 auto; padding:10px 16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+    .btn-sm { font-size:12px; padding:6px 13px; border-radius:8px; cursor:pointer; font-family:inherit; border:1px solid #d6cfc9; background:#fff; color:#555; white-space:nowrap; }
+    .btn-sm:hover { background:#f4f1ee; }
+    .btn-sm.green { background:#eef2e6; color:#3a4a24; border-color:#b8ccaa; }
+    .btn-sm.green:hover { background:#ddecd0; }
+    #import-file { display:none; }
+
+    /* MAIN */
+    main { max-width:900px; margin:0 auto; padding:20px 16px 80px; }
+
+    /* SEARCH */
+    .search-wrap { margin-bottom:16px; }
+    .search-input { width:100%; padding:13px 18px; font-size:15px; border-radius:12px; border:2px solid #d6cfc9; background:#fff; outline:none; font-family:inherit; }
+    .search-input:focus { border-color:#1b2c4a; }
+
+    /* FILTERS */
+    .filters-row { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .filter-group { display:flex; flex-direction:column; gap:4px; }
+    .filter-label { font-size:11px; color:#777; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
+    .filter-input { padding:9px 14px; border-radius:9px; border:2px solid #d6cfc9; background:#fff; font-size:14px; width:160px; font-family:inherit; outline:none; }
+    .filter-input:focus { border-color:#1b2c4a; }
+
+    /* CATEGORIES */
+    .categories { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:20px; scrollbar-width:thin; scrollbar-color:#4a5c2f #e8e2dc; }
+    .categories::-webkit-scrollbar { height:4px; }
+    .categories::-webkit-scrollbar-track { background:#e8e2dc; }
+    .categories::-webkit-scrollbar-thumb { background:#4a5c2f; border-radius:4px; }
+    .cat-btn { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:20px; border:2px solid #d6cfc9; background:#fff; cursor:pointer; font-size:13px; white-space:nowrap; color:#555; font-family:inherit; transition:all 0.15s; }
+    .cat-btn.active { background:#6b1a2a; color:#fce8ec; border-color:#6b1a2a; }
+    .results-info { font-size:13px; color:#888; margin-bottom:16px; }
+
+    /* GRID */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .card { background:#fff; border-radius:14px; padding:20px; cursor:pointer; border:2px solid #e8e2dc; transition:all 0.2s; }
+    .card:hover { transform:translateY(-3px); box-shadow:0 8px 30px rgba(107,26,42,0.12); border-color:#6b1a2a; }
+    .card-emoji { font-size:32px; margin-bottom:12px; }
+    .card-name { font-size:17px; font-weight:700; margin-bottom:8px; line-height:1.3; }
+    .card-meta { display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+    .meta-item { font-size:12px; color:#666; }
+    .diff-badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; text-transform:capitalize; }
+    .cat-label-small { font-size:12px; color:#4a5c2f; margin-bottom:10px; font-style:italic; }
+    .ing-list { display:flex; flex-wrap:wrap; gap:5px; }
+    .ing-chip { font-size:11px; background:#eef2e6; color:#3a4a24; padding:3px 8px; border-radius:8px; }
+    .ing-chip-more { font-size:11px; background:#1b2c4a; color:#e6eaf2; padding:3px 8px; border-radius:8px; }
+    .empty { text-align:center; padding:60px 20px; color:#aaa; }
+    .empty-icon { font-size:48px; margin-bottom:12px; }
+    .empty-title { font-size:18px; font-weight:600; margin-bottom:6px; }
+
+    /* DETAIL */
+    .detail-card { background:#fff; border-radius:18px; padding:32px 28px; border:2px solid #e8e2dc; }
+    .detail-header { display:flex; align-items:center; gap:18px; margin-bottom:24px; }
+    .detail-emoji { font-size:48px; }
+    .detail-title { font-size:26px; font-weight:700; line-height:1.2; }
+    .detail-cat { font-size:14px; color:#4a5c2f; font-style:italic; margin-top:4px; }
+    .detail-meta { display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap; }
+    .meta-box { display:flex; align-items:center; gap:10px; background:#f4f1ee; padding:12px 18px; border-radius:12px; flex:1; min-width:100px; }
+    .meta-box-icon { font-size:22px; }
+    .meta-box-val { font-size:18px; font-weight:700; }
+    .meta-box-lbl { font-size:11px; color:#999; text-transform:uppercase; }
+    .section { margin-bottom:24px; }
+    .section-title { font-size:16px; font-weight:700; margin-bottom:12px; color:#6b1a2a; }
+    .ing-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; }
+    .ing-item { font-size:14px; color:#333; padding:7px 12px; background:#eef2e6; border-radius:8px; }
+    .steps { font-size:15px; line-height:1.8; color:#333; white-space:pre-wrap; }
+    .note-box { background:#e6eaf2; border:2px solid #b8c4d8; border-radius:12px; padding:16px 20px; margin-bottom:20px; }
+    .note-text { font-size:14px; color:#1b2c4a; line-height:1.7; }
+    .tag-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+    .tag { font-size:12px; background:#f5eaec; color:#6b1a2a; padding:4px 10px; border-radius:20px; border:1px solid #d9a0ab; }
+    .detail-actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .btn-edit { flex:1; min-width:100px; padding:12px; background:#1b2c4a; color:#e6eaf2; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-family:inherit; }
+    .btn-delete { padding:12px 16px; background:#fff; color:#c0392b; border:2px solid #c0392b; border-radius:10px; cursor:pointer; font-size:14px; font-family:inherit; }
+    .btn-pdf-single { padding:12px 14px; background:#6b1a2a; color:#fce8ec; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-family:inherit; }
+    .btn-jpeg-single { padding:12px 14px; background:#4a5c2f; color:#eef2e6; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-family:inherit; }
+
+    /* FORM */
+    .form-card { background:#fff; border-radius:18px; padding:32px 28px; border:2px solid #e8e2dc; }
+    .form-title { font-size:22px; font-weight:700; margin-bottom:24px; color:#6b1a2a; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-group.full { grid-column:1 / -1; }
+    label.lbl { font-size:12px; font-weight:700; color:#777; text-transform:uppercase; letter-spacing:0.5px; }
+    input.inp, select.inp, textarea.inp { padding:11px 14px; border-radius:10px; border:2px solid #d6cfc9; font-size:14px; font-family:inherit; outline:none; background:#fff; width:100%; }
+    input.inp:focus, select.inp:focus, textarea.inp:focus { border-color:#1b2c4a; }
+    textarea.inp { min-height:100px; resize:vertical; line-height:1.6; }
+    textarea.inp.short { min-height:60px; }
+    .form-actions { display:flex; gap:12px; margin-top:24px; }
+    .btn-cancel { flex:1; padding:13px; background:#fff; color:#555; border:2px solid #d6cfc9; border-radius:10px; cursor:pointer; font-size:15px; font-family:inherit; }
+    .btn-save { flex:2; padding:13px; background:#4a5c2f; color:#eef2e6; border:none; border-radius:10px; cursor:pointer; font-size:15px; font-weight:700; font-family:inherit; }
+
+    /* LOADING OVERLAY */
+    #loading-overlay { display:none; position:fixed; inset:0; background:rgba(107,26,42,0.7); z-index:999; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+    #loading-overlay.show { display:flex; }
+    .loading-spinner { width:48px; height:48px; border:4px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; }
+    .loading-text { color:#fff; font-size:16px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* PRINT TEMPLATE (hidden, used for PDF/JPEG rendering) */
+    #print-area { display:none; position:fixed; left:-9999px; top:0; width:750px; background:#fff; font-family:Georgia,serif; color:#1a1a1a; padding:0; }
+    .print-recipe { padding:48px 52px; background:#fff; page-break-after:always; }
+    .print-recipe:last-child { page-break-after:auto; }
+    .print-header { border-bottom:3px solid #6b1a2a; padding-bottom:20px; margin-bottom:28px; display:flex; align-items:flex-start; gap:16px; }
+    .print-emoji { font-size:52px; line-height:1; }
+    .print-title { font-size:28px; font-weight:700; color:#1a1a1a; line-height:1.2; margin-bottom:6px; }
+    .print-cat { font-size:14px; color:#4a5c2f; font-style:italic; }
+    .print-meta { display:flex; gap:0; margin-bottom:28px; border:1.5px solid #e8e2dc; border-radius:12px; overflow:hidden; }
+    .print-meta-box { flex:1; padding:14px 16px; text-align:center; border-right:1.5px solid #e8e2dc; background:#faf8f5; }
+    .print-meta-box:last-child { border-right:none; }
+    .print-meta-val { font-size:20px; font-weight:700; color:#1a1a1a; }
+    .print-meta-lbl { font-size:10px; color:#999; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+    .print-section { margin-bottom:26px; }
+    .print-section-title { font-size:15px; font-weight:700; color:#6b1a2a; margin-bottom:12px; padding-bottom:6px; border-bottom:1.5px solid #f5eaec; }
+    .print-ing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .print-ing-item { font-size:13px; color:#333; padding:6px 10px; background:#eef2e6; border-radius:7px; }
+    .print-steps { font-size:14px; line-height:1.85; color:#333; white-space:pre-wrap; }
+    .print-note { background:#e6eaf2; border-left:4px solid #1b2c4a; padding:14px 16px; border-radius:0 8px 8px 0; font-size:13px; color:#1b2c4a; line-height:1.7; margin-bottom:20px; }
+    .print-tags { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:20px; }
+    .print-tag { font-size:12px; background:#f5eaec; color:#6b1a2a; padding:3px 10px; border-radius:20px; border:1px solid #d9a0ab; }
+    .print-footer { margin-top:32px; padding-top:14px; border-top:1px solid #e8e2dc; font-size:11px; color:#bbb; text-align:center; }
+    .print-cover { padding:80px 52px; background:#6b1a2a; min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; }
+    .print-cover-icon { font-size:72px; }
+    .print-cover-title { font-size:36px; font-weight:700; color:#fce8ec; }
+    .print-cover-sub { font-size:16px; color:#d9a0ab; }
+
+    @media (max-width:500px) {
+      .form-grid { grid-template-columns:1fr; }
+      .form-group.full { grid-column:1; }
+      .detail-card { padding:20px 16px; }
+      .detail-actions { gap:8px; }
+      .btn-edit, .btn-pdf-single, .btn-jpeg-single { font-size:13px; padding:10px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Gerando arquivo...</div>
+</div>
+
+<!-- Hidden print area -->
+<div id="print-area"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">📖</span>
+      <div>
+        <div class="logo-title">Minhas Receitas</div>
+        <div class="logo-sub" id="recipe-count">0 receitas salvas</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-back" id="btn-back" onclick="goBack()">← Voltar</button>
+      <button class="btn-add" id="btn-add" onclick="showAdd()">+ Nova Receita</button>
+    </div>
+  </div>
+</header>
+
+<div class="backup-bar">
+  <button class="btn-sm green" onclick="exportAllPDF()">📄 PDF — Todas as receitas</button>
+  <button class="btn-sm" onclick="exportRecipes()">⬇ Exportar backup</button>
+  <label class="btn-sm">⬆ Importar backup<input type="file" id="import-file" accept=".json" onchange="importRecipes(event)"></label>
+</div>
+
+<main id="main-content"></main>
+
+<script>
+const STORAGE_KEY = "minhas_receitas_v1";
+const SAMPLE_RECIPES = [
+  { id:1, name:"Frango ao Limão Siciliano", category:"prato-principal", time:35, servings:4, difficulty:"fácil",
+    ingredients:["frango","limão siciliano","alho","azeite","alecrim","sal","pimenta"],
+    tags:["rápido","proteína","cítrico"],
+    steps:"Tempere o frango com sal, pimenta, alho amassado e suco de limão. Deixe marinar 15 min. Aqueça o azeite e sele o frango dos dois lados. Adicione raspas de limão e alecrim. Cozinhe tampado por 20 min em fogo médio.",
+    notes:"Fica ainda melhor com batata-doce assada." },
+  { id:2, name:"Bolo de Cenoura com Cobertura de Chocolate", category:"sobremesa", time:60, servings:10, difficulty:"médio",
+    ingredients:["cenoura","ovos","óleo","farinha","açúcar","chocolate em pó","leite","manteiga","fermento"],
+    tags:["clássico","festa","chocolate"],
+    steps:"Bata no liquidificador cenoura, ovos e óleo. Misture com farinha, açúcar e fermento. Asse a 180°C por 35 min. Para a cobertura: misture chocolate, leite e manteiga em fogo baixo até engrossar. Despeje sobre o bolo ainda quente.",
+    notes:"Não abra o forno nos primeiros 25 minutos!" },
+  { id:3, name:"Bruschetta de Tomate e Manjericão", category:"entrada", time:15, servings:6, difficulty:"fácil",
+    ingredients:["pão italiano","tomate","manjericão","alho","azeite","sal","pimenta"],
+    tags:["vegetariano","rápido","italiano"],
+    steps:"Corte o pão em fatias e torre. Esfregue alho cru na superfície quente. Misture tomate picado, manjericão, azeite, sal e pimenta. Coloque sobre as fatias e sirva imediatamente.",
+    notes:"Use tomate italiano bem maduro para melhor sabor." },
+];
+const CATEGORIES = [
+  {id:"todos",label:"Todos",emoji:"🍽️"},
+  {id:"entrada",label:"Entradas",emoji:"🥗"},
+  {id:"prato-principal",label:"Pratos Principais",emoji:"🍳"},
+  {id:"sobremesa",label:"Sobremesas",emoji:"🍰"},
+  {id:"lanche",label:"Lanches",emoji:"🥪"},
+  {id:"bebida",label:"Bebidas",emoji:"🥤"},
+  {id:"acompanhamento",label:"Acompanhamentos",emoji:"🥦"},
+];
+const DIFF_COLORS = {"fácil":"#4ade80","médio":"#fbbf24","difícil":"#f87171"};
+
+function loadRecipes() {
+  try { const s=localStorage.getItem(STORAGE_KEY); return s?JSON.parse(s):SAMPLE_RECIPES; } catch { return SAMPLE_RECIPES; }
+}
+function saveRecipes() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.recipes)); } catch {}
+}
+const state = {
+  recipes: loadRecipes(), view:"list", selectedId:null, editingId:null,
+  search:"", category:"todos", maxTime:"", ingredientSearch:"",
+};
+function catEmoji(id) { return (CATEGORIES.find(c=>c.id===id)||{}).emoji||"🍽️"; }
+function catLabel(id) { return (CATEGORIES.find(c=>c.id===id)||{}).label||id; }
+function e(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// ── RENDER ────────────────────────────────────────────────────────
+function render() {
+  document.getElementById("recipe-count").textContent = state.recipes.length+" receitas salvas";
+  document.getElementById("btn-back").style.display = state.view!=="list"?"inline-block":"none";
+  document.getElementById("btn-add").style.display  = state.view==="list"?"inline-block":"none";
+  const main = document.getElementById("main-content");
+  if (state.view==="list")   main.innerHTML = renderList();
+  if (state.view==="detail") main.innerHTML = renderDetail();
+  if (state.view==="add")    main.innerHTML = renderForm(null);
+  if (state.view==="edit")   main.innerHTML = renderForm(state.recipes.find(r=>r.id===state.editingId));
+}
+
+function renderList() {
+  const filtered = state.recipes.filter(r => {
+    const matchCat = state.category==="todos" || r.category===state.category;
+    const q = state.search.toLowerCase();
+    const matchS = !q || r.name.toLowerCase().includes(q) || r.ingredients.some(i=>i.toLowerCase().includes(q)) || (r.tags||[]).some(t=>t.toLowerCase().includes(q));
+    const matchI = !state.ingredientSearch || r.ingredients.some(i=>i.toLowerCase().includes(state.ingredientSearch.toLowerCase()));
+    const matchT = !state.maxTime || r.time<=parseInt(state.maxTime);
+    return matchCat && matchS && matchI && matchT;
+  });
+  const cats = CATEGORIES.map(c=>`<button class="cat-btn${state.category===c.id?' active':''}" onclick="setCategory('${c.id}')"><span>${c.emoji}</span><span>${c.label}</span></button>`).join("");
+  const cards = filtered.length===0
+    ? `<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">Nenhuma receita encontrada</div><div style="color:#999">Tente outros filtros ou adicione uma nova receita</div></div>`
+    : filtered.map(r => {
+        const chips = r.ingredients.slice(0,4).map(i=>`<span class="ing-chip">${e(i)}</span>`).join("")+(r.ingredients.length>4?`<span class="ing-chip-more">+${r.ingredients.length-4}</span>`:"");
+        const dc = DIFF_COLORS[r.difficulty]||"#999";
+        return `<div class="card" onclick="openDetail(${r.id})">
+          <div class="card-emoji">${catEmoji(r.category)}</div>
+          <div class="card-name">${e(r.name)}</div>
+          <div class="card-meta"><span class="meta-item">⏱ ${r.time} min</span><span class="meta-item">👤 ${r.servings} porções</span><span class="diff-badge" style="background:${dc}22;color:${dc}">${e(r.difficulty)}</span></div>
+          <div class="cat-label-small">${catLabel(r.category)}</div>
+          <div class="ing-list">${chips}</div>
+        </div>`;
+      }).join("");
+  const count = filtered.length===0?"Nenhuma receita encontrada":`${filtered.length} receita${filtered.length>1?"s":""} encontrada${filtered.length>1?"s":""}`;
+  return `
+    <div class="search-wrap"><input class="search-input" placeholder="🔍  Buscar por nome, ingrediente ou tag..." value="${e(state.search)}" oninput="setState('search',this.value)"></div>
+    <div class="filters-row">
+      <div class="filter-group"><span class="filter-label">🧄 Ingrediente</span><input class="filter-input" placeholder="ex: frango" value="${e(state.ingredientSearch)}" oninput="setState('ingredientSearch',this.value)"></div>
+      <div class="filter-group"><span class="filter-label">⏱ Tempo máx (min)</span><input class="filter-input" type="number" placeholder="ex: 30" value="${e(state.maxTime)}" oninput="setState('maxTime',this.value)"></div>
+    </div>
+    <div class="categories">${cats}</div>
+    <div class="results-info">${count}</div>
+    <div class="grid">${cards}</div>`;
+}
+
+function renderDetail() {
+  const r = state.recipes.find(r=>r.id===state.selectedId);
+  if (!r) return "";
+  const dc = DIFF_COLORS[r.difficulty]||"#999";
+  const ings = r.ingredients.map(i=>`<div class="ing-item">✓ ${e(i)}</div>`).join("");
+  const tags = (r.tags||[]).map(t=>`<span class="tag">#${e(t)}</span>`).join("");
+  const notes = r.notes?`<section class="note-box"><div class="section-title">💡 Dicas</div><div class="note-text">${e(r.notes)}</div></section>`:"";
+  const tagsRow = tags?`<div class="tag-row">${tags}</div>`:"";
+  return `
+    <div class="detail-card" id="recipe-detail-card">
+      <div class="detail-header"><span class="detail-emoji">${catEmoji(r.category)}</span><div><div class="detail-title">${e(r.name)}</div><div class="detail-cat">${catLabel(r.category)}</div></div></div>
+      <div class="detail-meta">
+        <div class="meta-box"><span class="meta-box-icon">⏱</span><div><div class="meta-box-val">${r.time} min</div><div class="meta-box-lbl">tempo</div></div></div>
+        <div class="meta-box"><span class="meta-box-icon">👤</span><div><div class="meta-box-val">${r.servings}</div><div class="meta-box-lbl">porções</div></div></div>
+        <div class="meta-box"><span class="meta-box-icon">📊</span><div><div class="meta-box-val" style="color:${dc}">${e(r.difficulty)}</div><div class="meta-box-lbl">dificuldade</div></div></div>
+      </div>
+      <section class="section"><div class="section-title">🧄 Ingredientes</div><div class="ing-grid">${ings}</div></section>
+      <section class="section"><div class="section-title">👨‍🍳 Modo de Preparo</div><div class="steps">${e(r.steps)}</div></section>
+      ${notes}${tagsRow}
+      <div class="detail-actions">
+        <button class="btn-edit" onclick="showEdit(${r.id})">✏️ Editar</button>
+        <button class="btn-pdf-single" onclick="exportSinglePDF(${r.id})">📄 PDF</button>
+        <button class="btn-jpeg-single" onclick="exportJPEG(${r.id})">🖼 JPEG</button>
+        <button class="btn-delete" onclick="deleteRecipe(${r.id})">🗑️</button>
+      </div>
+    </div>`;
+}
+
+function renderForm(r) {
+  const v = r||{name:"",category:"prato-principal",time:"",servings:"",difficulty:"fácil",ingredients:[],tags:[],steps:"",notes:""};
+  const isEdit = !!r;
+  const catOpts = CATEGORIES.filter(c=>c.id!=="todos").map(c=>`<option value="${c.id}"${v.category===c.id?" selected":""}>${c.emoji} ${c.label}</option>`).join("");
+  return `
+    <div class="form-card">
+      <div class="form-title">${isEdit?"✏️ Editar Receita":"➕ Nova Receita"}</div>
+      <div class="form-grid">
+        <div class="form-group full"><label class="lbl">Nome da receita *</label><input class="inp" id="f-name" value="${e(v.name)}" placeholder="ex: Bolo de Chocolate"></div>
+        <div class="form-group"><label class="lbl">Categoria</label><select class="inp" id="f-category">${catOpts}</select></div>
+        <div class="form-group"><label class="lbl">Dificuldade</label><select class="inp" id="f-difficulty"><option value="fácil"${v.difficulty==="fácil"?" selected":""}>Fácil</option><option value="médio"${v.difficulty==="médio"?" selected":""}>Médio</option><option value="difícil"${v.difficulty==="difícil"?" selected":""}>Difícil</option></select></div>
+        <div class="form-group"><label class="lbl">Tempo (minutos)</label><input class="inp" id="f-time" type="number" value="${v.time||""}" placeholder="ex: 45"></div>
+        <div class="form-group"><label class="lbl">Porções</label><input class="inp" id="f-servings" type="number" value="${v.servings||""}" placeholder="ex: 4"></div>
+        <div class="form-group full"><label class="lbl">Ingredientes (separados por vírgula)</label><input class="inp" id="f-ingredients" value="${e(v.ingredients.join(", "))}" placeholder="ex: frango, alho, limão, azeite"></div>
+        <div class="form-group full"><label class="lbl">Modo de preparo</label><textarea class="inp" id="f-steps" placeholder="Descreva o passo a passo...">${e(v.steps)}</textarea></div>
+        <div class="form-group full"><label class="lbl">Dicas / Observações</label><textarea class="inp short" id="f-notes" placeholder="ex: fica melhor no dia seguinte...">${e(v.notes||"")}</textarea></div>
+        <div class="form-group full"><label class="lbl">Tags (separadas por vírgula)</label><input class="inp" id="f-tags" value="${e((v.tags||[]).join(", "))}" placeholder="ex: rápido, vegetariano, festa"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="goBack()">Cancelar</button>
+        <button class="btn-save" onclick="saveForm()">💾 Salvar Receita</button>
+      </div>
+    </div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────
+function setState(k,v) { state[k]=v; render(); }
+function setCategory(id) { state.category=id; render(); }
+function openDetail(id) { state.selectedId=id; state.view="detail"; render(); window.scrollTo(0,0); }
+function showAdd() { state.editingId=null; state.view="add"; render(); window.scrollTo(0,0); }
+function showEdit(id) { state.editingId=id; state.view="edit"; render(); window.scrollTo(0,0); }
+function goBack() {
+  if (state.view==="detail") state.view="list";
+  else if (state.view==="add") state.view="list";
+  else if (state.view==="edit") state.view="detail";
+  render(); window.scrollTo(0,0);
+}
+function saveForm() {
+  const name = document.getElementById("f-name").value.trim();
+  if (!name) { alert("Por favor, insira o nome da receita."); return; }
+  const recipe = {
+    name, category:document.getElementById("f-category").value,
+    difficulty:document.getElementById("f-difficulty").value,
+    time:parseInt(document.getElementById("f-time").value)||0,
+    servings:parseInt(document.getElementById("f-servings").value)||0,
+    ingredients:document.getElementById("f-ingredients").value.split(",").map(s=>s.trim()).filter(Boolean),
+    steps:document.getElementById("f-steps").value.trim(),
+    notes:document.getElementById("f-notes").value.trim(),
+    tags:document.getElementById("f-tags").value.split(",").map(s=>s.trim()).filter(Boolean),
+  };
+  if (state.editingId) {
+    recipe.id=state.editingId;
+    state.recipes=state.recipes.map(r=>r.id===state.editingId?recipe:r);
+    state.selectedId=state.editingId; state.view="detail";
+  } else {
+    recipe.id=Date.now(); state.recipes=[recipe,...state.recipes];
+    state.selectedId=recipe.id; state.view="detail";
+  }
+  saveRecipes(); render(); window.scrollTo(0,0);
+}
+function deleteRecipe(id) {
+  if (!confirm("Excluir esta receita?")) return;
+  state.recipes=state.recipes.filter(r=>r.id!==id);
+  saveRecipes(); state.view="list"; render();
+}
+
+// ── BACKUP JSON ───────────────────────────────────────────────────
+function exportRecipes() {
+  const blob = new Blob([JSON.stringify(state.recipes,null,2)],{type:"application/json"});
+  triggerDownload(URL.createObjectURL(blob),"minhas-receitas-backup.json");
+}
+function importRecipes(event) {
+  const file=event.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev) {
+    try {
+      const imported=JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      if (confirm(`Importar ${imported.length} receitas? Isso vai substituir as receitas atuais.`)) {
+        state.recipes=imported; saveRecipes(); state.view="list"; render();
+      }
+    } catch { alert("Arquivo inválido. Use um backup exportado por este app."); }
+  };
+  reader.readAsText(file); event.target.value="";
+}
+
+// ── PRINT TEMPLATE ────────────────────────────────────────────────
+function buildRecipeHTML(r) {
+  const dc = DIFF_COLORS[r.difficulty]||"#999";
+  const ings = r.ingredients.map(i=>`<div class="print-ing-item">✓ ${e(i)}</div>`).join("");
+  const tags = (r.tags||[]).length ? `<div class="print-tags">${(r.tags).map(t=>`<span class="print-tag">#${e(t)}</span>`).join("")}</div>` : "";
+  const notes = r.notes ? `<div class="print-note"><strong>💡 Dica:</strong> ${e(r.notes)}</div>` : "";
+  return `
+    <div class="print-recipe">
+      <div class="print-header">
+        <div class="print-emoji">${catEmoji(r.category)}</div>
+        <div><div class="print-title">${e(r.name)}</div><div class="print-cat">${catLabel(r.category)}</div></div>
+      </div>
+      <div class="print-meta">
+        <div class="print-meta-box"><div class="print-meta-val">⏱ ${r.time}</div><div class="print-meta-lbl">minutos</div></div>
+        <div class="print-meta-box"><div class="print-meta-val">👤 ${r.servings}</div><div class="print-meta-lbl">porções</div></div>
+        <div class="print-meta-box"><div class="print-meta-val" style="color:${dc}">${e(r.difficulty)}</div><div class="print-meta-lbl">dificuldade</div></div>
+      </div>
+      <div class="print-section">
+        <div class="print-section-title">🧄 Ingredientes</div>
+        <div class="print-ing-grid">${ings}</div>
+      </div>
+      <div class="print-section">
+        <div class="print-section-title">👨‍🍳 Modo de Preparo</div>
+        <div class="print-steps">${e(r.steps)}</div>
+      </div>
+      ${notes}${tags}
+      <div class="print-footer">Minhas Receitas • ${e(r.name)}</div>
+    </div>`;
+}
+
+// ── EXPORT SINGLE PDF ─────────────────────────────────────────────
+function exportSinglePDF(id) {
+  const r = state.recipes.find(x=>x.id===id);
+  if (!r) return;
+  const area = document.getElementById("print-area");
+  area.innerHTML = buildRecipeHTML(r);
+  area.style.display = "block";
+
+  // Use print dialog — cleanest PDF on iPad
+  const printContent = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>${getPrintCSS()}</style></head><body>${buildRecipeHTML(r)}</body></html>`;
+  const win = window.open("","_blank","width=800,height=900");
+  if (win) {
+    win.document.write(printContent);
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+  } else {
+    // Fallback: inject into page and trigger print
+    triggerPrint([r]);
+  }
+  area.style.display = "none";
+}
+
+// ── EXPORT ALL PDF ────────────────────────────────────────────────
+function exportAllPDF() {
+  if (state.recipes.length===0) { alert("Nenhuma receita salva ainda."); return; }
+  triggerPrint(state.recipes);
+}
+
+function triggerPrint(recipes) {
+  const cover = `<div class="print-recipe" style="page-break-after:always;padding:80px 52px;background:#6b1a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:800px;gap:16px;">
+    <div style="font-size:72px;">📖</div>
+    <div style="font-size:36px;font-weight:700;color:#fce8ec;">Minhas Receitas</div>
+    <div style="font-size:16px;color:#d9a0ab;">${recipes.length} receita${recipes.length>1?"s":""}</div>
+    <div style="font-size:13px;color:#d9a0ab;margin-top:8px;">${new Date().toLocaleDateString("pt-BR",{year:"numeric",month:"long",day:"numeric"})}</div>
+  </div>`;
+  const body = (recipes.length>1?cover:"") + recipes.map(r=>buildRecipeHTML(r)).join("");
+  const printContent = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>${getPrintCSS()}@media print{@page{margin:0;size:A4;}body{margin:0;}}</style>
+    </head><body>${body}</body></html>`;
+  const win = window.open("","_blank","width=800,height=900");
+  if (win) {
+    win.document.write(printContent);
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+  } else {
+    alert("Permita popups para gerar o PDF.");
+  }
+}
+
+function getPrintCSS() {
+  return `
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;background:#fff;}
+    .print-recipe{padding:48px 52px;background:#fff;page-break-after:always;}
+    .print-recipe:last-child{page-break-after:auto;}
+    .print-header{border-bottom:3px solid #6b1a2a;padding-bottom:20px;margin-bottom:28px;display:flex;align-items:flex-start;gap:16px;}
+    .print-emoji{font-size:52px;line-height:1;}
+    .print-title{font-size:28px;font-weight:700;color:#1a1a1a;line-height:1.2;margin-bottom:6px;}
+    .print-cat{font-size:14px;color:#4a5c2f;font-style:italic;}
+    .print-meta{display:flex;margin-bottom:28px;border:1.5px solid #e8e2dc;border-radius:12px;overflow:hidden;}
+    .print-meta-box{flex:1;padding:14px 16px;text-align:center;border-right:1.5px solid #e8e2dc;background:#faf8f5;}
+    .print-meta-box:last-child{border-right:none;}
+    .print-meta-val{font-size:18px;font-weight:700;}
+    .print-meta-lbl{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+    .print-section{margin-bottom:26px;}
+    .print-section-title{font-size:15px;font-weight:700;color:#6b1a2a;margin-bottom:12px;padding-bottom:6px;border-bottom:1.5px solid #f5eaec;}
+    .print-ing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+    .print-ing-item{font-size:13px;color:#333;padding:6px 10px;background:#eef2e6;border-radius:7px;}
+    .print-steps{font-size:14px;line-height:1.85;color:#333;white-space:pre-wrap;}
+    .print-note{background:#e6eaf2;border-left:4px solid #1b2c4a;padding:14px 16px;border-radius:0 8px 8px 0;font-size:13px;color:#1b2c4a;line-height:1.7;margin-bottom:20px;}
+    .print-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px;}
+    .print-tag{font-size:12px;background:#f5eaec;color:#6b1a2a;padding:3px 10px;border-radius:20px;border:1px solid #d9a0ab;}
+    .print-footer{margin-top:32px;padding-top:14px;border-top:1px solid #e8e2dc;font-size:11px;color:#bbb;text-align:center;}
+  `;
+}
+
+// ── EXPORT JPEG ───────────────────────────────────────────────────
+function exportJPEG(id) {
+  const r = state.recipes.find(x=>x.id===id);
+  if (!r) return;
+
+  const overlay = document.getElementById("loading-overlay");
+  const loadingText = document.getElementById("loading-text");
+  loadingText.textContent = "Gerando imagem...";
+  overlay.classList.add("show");
+
+  const area = document.getElementById("print-area");
+  area.innerHTML = buildRecipeHTML(r);
+  area.style.display = "block";
+  area.style.left = "-9999px";
+
+  // Small delay to let DOM render
+  setTimeout(() => {
+    html2canvas(area.querySelector(".print-recipe"), {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      width: 750,
+      windowWidth: 750,
+    }).then(canvas => {
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const filename = r.name.replace(/[^a-z0-9]/gi,"-").toLowerCase()+".jpg";
+        triggerDownload(url, filename);
+        URL.revokeObjectURL(url);
+        overlay.classList.remove("show");
+        area.style.display = "none";
+      }, "image/jpeg", 0.92);
+    }).catch(() => {
+      overlay.classList.remove("show");
+      area.style.display = "none";
+      alert("Erro ao gerar imagem. Tente novamente.");
+    });
+  }, 300);
+}
+
+function triggerDownload(url, filename) {
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+render();
+</script>
+</body>
+</html>
